@@ -66,7 +66,7 @@ void find(char *path, char *search_exp, int *flag)
 
     if (st.type == T_FILE){
       if (strcmp(fmtname(buf), search_exp) == 0) {
-        *flag = 1;
+        *flag = 1; // Mark file found
         printf("%s\n", buf);
       }
     } else if (st.type == T_DIR){
@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
     find(argv[1], argv[2], &flag);
   }
 
+  // Notification if file not found
   if (!flag)
   {
     printf("find: file not found\n");
