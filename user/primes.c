@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
             write(p[1], &i, sizeof(i)); // Ghi số nguyên trực tiếp vào pipe
         }
         close(p[1]); // Đóng đầu ghi sau khi hoàn thành ghi các số
-
+        wait(0);
         exit(0); // Kết thúc chương trình chính
     }
 }
