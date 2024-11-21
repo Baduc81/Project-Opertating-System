@@ -199,6 +199,7 @@ UPROGS=\
 	$U/_xargs\
 	$U/_find\
 	$U/_test_getyear\
+	$U/_sysinfotest\
 
 
 ifeq ($(LAB),syscall)

@@ -1,0 +1,180 @@
+diff --git a/Makefile b/Makefile
+index fa272a3..140f02a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -199,6 +199,7 @@ UPROGS=\
+ 	$U/_xargs\
+ 	$U/_find\
+ 	$U/_test_getyear\
++	$U/_sysinfotest\
+ 
+ 
+ ifeq ($(LAB),syscall)
+diff --git a/kernel/defs.h b/kernel/defs.h
+index d1b6bb9..651a172 100644
+--- a/kernel/defs.h
++++ b/kernel/defs.h
+@@ -16,6 +16,7 @@ void            brelse(struct buf*);
+ void            bwrite(struct buf*);
+ void            bpin(struct buf*);
+ void            bunpin(struct buf*);
++uint64          free_memory();
+ 
+ // console.c
+ void            consoleinit(void);
+@@ -69,6 +70,7 @@ void            initlog(int, struct superblock*);
+ void            log_write(struct buf*);
+ void            begin_op(void);
+ void            end_op(void);
++uint64          getnproc(void);
+ 
+ // pipe.c
+ int             pipealloc(struct file**, struct file**);
+diff --git a/kernel/kalloc.c b/kernel/kalloc.c
+index 0699e7e..39c0166 100644
+--- a/kernel/kalloc.c
++++ b/kernel/kalloc.c
+@@ -80,3 +80,17 @@ kalloc(void)
+     memset((char*)r, 5, PGSIZE); // fill with junk
+   return (void*)r;
+ }
++
++uint64 
++free_memory() 
++{
++    uint64 free_mem = 0;
++    struct run *r;
++
++    acquire(&kmem.lock);  // Lock to avoid conflicts when access
++    for (r = kmem.freelist; r; r = r->next)
++        free_mem += PGSIZE;  // Each page has a 'PGSIZE' size.
++    release(&kmem.lock);   // Open
++
++    return free_mem;
++}
+diff --git a/kernel/proc.c b/kernel/proc.c
+index 130d9ce..504828c 100644
+--- a/kernel/proc.c
++++ b/kernel/proc.c
+@@ -693,3 +693,20 @@ procdump(void)
+     printf("\n");
+   }
+ }
++
++// Count the number of active processes.
++uint64 
++getnproc(void)
++{
++  uint64 count = 0;
++  struct proc *p;
++
++  for (p = proc; p < &proc[NPROC]; p++){
++    acquire(&p->lock);    // Lock the current progress.
++    if (p->state != UNUSED){
++      count++;
++    }
++    release(&p->lock);    // Open the current progress.
++  }
++  return count;
++}
+\ No newline at end of file
+diff --git a/kernel/syscall.c b/kernel/syscall.c
+index b478d97..a390ec0 100644
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+@@ -102,6 +102,7 @@ extern uint64 sys_link(void);
+ extern uint64 sys_mkdir(void);
+ extern uint64 sys_close(void);
+ extern uint64 sys_getyear(void);
++extern uint64 sys_sysinfo(void); // Khai báo hàm xử lý.
+ 
+ // An array mapping syscall numbers from syscall.h
+ // to the function that handles the system call.
+@@ -128,6 +129,7 @@ static uint64 (*syscalls[])(void) = {
+ [SYS_mkdir]   sys_mkdir,
+ [SYS_close]   sys_close,
+ [SYS_getyear] sys_getyear,
++[SYS_sysinfo] sys_sysinfo,
+ };
+ 
+ void
+diff --git a/kernel/syscall.h b/kernel/syscall.h
+index 57c1b3b..0422609 100644
+--- a/kernel/syscall.h
++++ b/kernel/syscall.h
+@@ -20,4 +20,5 @@
+ #define SYS_link   19
+ #define SYS_mkdir  20
+ #define SYS_close  21
+-#define SYS_getyear 22
+\ No newline at end of file
++#define SYS_getyear 22
++#define SYS_sysinfo 23
+\ No newline at end of file
+diff --git a/kernel/sysproc.c b/kernel/sysproc.c
+index 337ece2..eb85ff6 100644
+--- a/kernel/sysproc.c
++++ b/kernel/sysproc.c
+@@ -5,6 +5,7 @@
+ #include "memlayout.h"
+ #include "spinlock.h"
+ #include "proc.h"
++#include "sysinfo.h"
+ 
+ uint64
+ sys_exit(void)
+@@ -99,3 +100,22 @@ sys_getyear(void)
+ {
+   return 1975;
+ } 
++
++uint64
++sys_sysinfo(void)
++{
++  struct proc *p = myproc();  // Get current progress information.
++  struct sysinfo info;        // Create a struct to save information.
++  uint64 info_addr;           // user pointer to struct stat
++
++  argaddr(0, &info_addr);
++
++  info.freemem = free_memory();
++  info.nproc = getnproc();
++
++  // Copy the info back to the user space structure.
++  if (copyout( p->pagetable, info_addr, (char*)&info, sizeof(info)) < 0){
++    return -1;
++  }
++  return 0;
++}
+\ No newline at end of file
+diff --git a/user/user.h b/user/user.h
+index 617b9f8..53bf647 100644
+--- a/user/user.h
++++ b/user/user.h
+@@ -1,4 +1,5 @@
+ struct stat;
++struct sysinfo;
+ 
+ // system calls
+ int fork(void);
+@@ -23,6 +24,7 @@ char* sbrk(int);
+ int sleep(int);
+ int uptime(void);
+ int getyear(void);
++int sysinfo(struct sysinfo *info);
+ 
+ // ulib.c
+ int stat(const char*, struct stat*);
+diff --git a/user/usys.pl b/user/usys.pl
+index f3b18a1..3357f64 100755
+--- a/user/usys.pl
++++ b/user/usys.pl
+@@ -36,4 +36,5 @@ entry("getpid");
+ entry("sbrk");
+ entry("sleep");
+ entry("uptime");
+-entry("getyear")
+\ No newline at end of file
++entry("getyear");
++entry("sysinfo");
+\ No newline at end of file
