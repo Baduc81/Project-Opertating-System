@@ -155,6 +155,62 @@ char *syscallnames[] = {
 [SYS_trace]   "trace",
 };
 
+char* syscall_name(int syscall_num) {
+    switch(syscall_num) {
+    case SYS_fork: return "fork";
+    case SYS_exit: return "exit";
+    case SYS_wait: return "wait";
+    case SYS_pipe: return "pipe";
+    case SYS_read: return "read";
+    case SYS_kill: return "kill";
+    case SYS_exec: return "exec";
+    case SYS_fstat: return "fstat";
+    case SYS_chdir: return "chdir";
+    case SYS_dup: return "dup";
+    case SYS_getpid: return "getpid";
+    case SYS_sbrk: return "sbrk";
+    case SYS_sleep: return "sleep";
+    case SYS_uptime: return "uptime";
+    case SYS_open: return "open";
+    case SYS_write: return "write";
+    case SYS_mknod: return "mknod";
+    case SYS_unlink: return "unlink";
+    case SYS_link: return "link";
+    case SYS_mkdir: return "mkdir";
+    case SYS_close: return "close";
+    case SYS_trace: return "trace";
+    default: return "unknown";
+    }
+}
+
+int syscall_arg_count(int syscall_num) {
+    switch(syscall_num) {
+    case SYS_fork: return 0;
+    case SYS_exit: return 1;
+    case SYS_wait: return 1;
+    case SYS_pipe: return 1;
+    case SYS_read: return 3;
+    case SYS_kill: return 2;
+    case SYS_exec: return 2;
+    case SYS_fstat: return 2;
+    case SYS_chdir: return 1;
+    case SYS_dup: return 1;
+    case SYS_getpid: return 0;
+    case SYS_sbrk: return 1;
+    case SYS_sleep: return 1;
+    case SYS_uptime: return 0;
+    case SYS_open: return 2;
+    case SYS_write: return 3;
+    case SYS_mknod: return 3;
+    case SYS_unlink: return 1;
+    case SYS_link: return 2;
+    case SYS_mkdir: return 1;
+    case SYS_close: return 1;
+    case SYS_trace: return 1;
+    default: return 0;
+    }
+}
+
 void
 syscall(void)
 {
@@ -163,13 +219,27 @@ syscall(void)
 
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    // Use num to lookup the system call function for num, call it,
+    uint64 args[6];
+    args[0] = p->trapframe->a0;
+    args[1] = p->trapframe->a1;
+    args[2] = p->trapframe->a2;
+    args[3] = p->trapframe->a3;
+    args[4] = p->trapframe->a4;
+    args[5] = p->trapframe->a5;
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
 
     //trace
     if((p->traced & (1 << num))) {
-      printf("%d: syscall %s -> %ld\n", p->pid, syscallnames[num], p->trapframe->a0);
+      printf("%d: syscall %s(", p->pid, syscall_name(num));
+            
+      // In các tham số dựa trên số lượng cần thiết
+      int num_args = syscall_arg_count(num);  // Lấy số lượng tham số
+      for (int i = 0; i < num_args; i++) {
+        if (i > 0) printf(", ");
+          printf("%ld", args[i]);
+        }
+        printf(") -> %ld\n", p->trapframe->a0);  // In giá trị trả về
     }
 
   } else {
@@ -178,3 +248,6 @@ syscall(void)
     p->trapframe->a0 = -1;
   }
 }
+
+
+
