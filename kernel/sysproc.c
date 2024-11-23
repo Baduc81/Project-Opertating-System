@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -107,4 +108,24 @@ sys_trace(void)
   p->traced = trace_mask;
 	return 0;
 
+}
+
+uint64
+sys_sysinfo(void)
+{
+  struct proc *p = myproc();  // Get current progress information.
+  struct sysinfo info;        // Create a struct to save information.
+  uint64 info_addr;           // user pointer to struct stat
+  
+  argaddr(0, &info_addr);
+  
+  info.freemem = free_memory();
+  info.nproc = getnproc();
+  info.loadavg = get_loadavg();
+
+  // Copy the info back to the user space structure.
+  if (copyout( p->pagetable, info_addr, (char*)&info, sizeof(info)) < 0){
+    return -1;
+  }
+  return 0;
 }

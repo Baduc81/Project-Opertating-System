@@ -149,5 +149,14 @@ main(int argc, char *argv[])
   testmem();
   testproc();
   printf("sysinfotest: OK\n");
+
+  struct sysinfo info;
+  if (sysinfo(&info) < 0) {
+    printf("sysinfo failed\n");
+    exit(1);
+  }
+  printf("Free memory: %lu bytes\n", info.freemem);
+  printf("Number of processes: %lu\n", info.nproc);
+  printf("Load average (x100): %lu\n", info.loadavg);
   exit(0);
 }

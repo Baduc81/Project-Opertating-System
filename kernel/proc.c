@@ -437,6 +437,9 @@ wait(uint64 addr)
   }
 }
 
+uint64 total_runnable = 0;  // Tổng số tiến trình RUNNABLE.
+uint64 runnable_ticks = 0;  // Số lần cập nhật.
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -452,6 +455,20 @@ scheduler(void)
 
   c->proc = 0;
   for(;;){
+    // Đếm số tiến trình RUNNABLE
+    int runnable_count = 0;
+    // struct proc *p;
+    for (p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if (p->state == RUNNABLE) {
+            runnable_count++;
+        }
+        release(&p->lock);
+    }
+    // Cập nhật tổng số tiến trình RUNNABLE
+    total_runnable += runnable_count;
+    runnable_ticks++;
+
     // The most recent process to run may have had interrupts
     // turned off; enable them to avoid a deadlock if all
     // processes are waiting.
@@ -695,4 +712,31 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// Đếm số lượng tiến trình đang hoạt động           
+uint64 
+getnproc(void)
+{
+  uint64 count = 0;
+  struct proc *p;
+  for (p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);    // Lock the current progress.
+    if (p->state != UNUSED){
+      count++;
+    }
+    release(&p->lock);    // Open the current progress.
+  }
+  return count;
+}
+
+// Tính toán Load Average
+uint64 
+get_loadavg(void) 
+{
+    if (runnable_ticks == 0) {
+        return 0;  // Tránh chia cho 0.
+    }
+    // Tính trung bình (nhân với 100 để làm tròn).
+    return (total_runnable * 100) / runnable_ticks;
 }

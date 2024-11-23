@@ -91,3 +91,14 @@ kalloc(void)
   return (void*)r;
 }
 
+uint64 
+free_memory() 
+{
+    uint64 free_mem = 0;
+    struct run *r;
+    acquire(&kmem.lock);  // Lock to avoid conflicts when access
+    for (r = kmem.freelist; r; r = r->next)
+        free_mem += PGSIZE;  // Each page has a 'PGSIZE' size.
+    release(&kmem.lock);   // Open
+    return free_mem;
+}
