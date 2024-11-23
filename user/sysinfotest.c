@@ -101,10 +101,21 @@ void sysinfotest() {
 
     // Nếu mọi kiểm tra đều thành công.
     printf("sysinfotest: OK\n");
-    exit(0);
+    // exit(0);
 }
 
 int main(int argc, char *argv[]) {
     sysinfotest();
-    return 0;
+
+    struct sysinfo info;
+
+    if (sysinfo(&info) < 0) {
+        printf("sysinfo failed\n");
+        exit(1);
+    }
+
+    printf("Free memory: %lu bytes\n", info.freemem);
+    printf("Number of processes: %lu\n", info.nproc);
+    printf("Load average (x100): %lu\n", info.loadavg);
+    exit(0);
 }

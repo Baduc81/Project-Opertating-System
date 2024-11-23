@@ -112,6 +112,7 @@ sys_sysinfo(void)
 
   info.freemem = free_memory();
   info.nproc = getnproc();
+  info.loadavg = get_loadavg();
 
   // Copy the info back to the user space structure.
   if (copyout( p->pagetable, info_addr, (char*)&info, sizeof(info)) < 0){

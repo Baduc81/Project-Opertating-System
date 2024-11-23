@@ -8,4 +8,5 @@ nên ở đây không cần định nghĩa thư viện
 struct sysinfo {
     uint64 freemem;  // Bộ nhớ trống, tính bằng byte.
     uint64 nproc;    // Số lượng tiến trình hoạt động.
+    uint64 loadavg;  // Load Average (số tiến trình RUNNABLE trung bình).
 };
