@@ -155,7 +155,7 @@ main(int argc, char *argv[])
     printf("sysinfo failed\n");
     exit(1);
   }
-  printf("Free memory: %lu bytes\n", info.freemem);
+  printf("Free memory: %lu bytes \n", info.freemem);
   printf("Number of processes: %lu\n", info.nproc);
   printf("Load average (x100): %lu\n", info.loadavg);
   exit(0);
