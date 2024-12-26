@@ -187,6 +187,7 @@ void            vmprint(pagetable_t);
 #ifdef LAB_PGTBL
 pte_t*          pgpte(pagetable_t, uint64);
 #endif
+void            vmprint(pagetable_t pagetable);
 
 // plic.c
 void            plicinit(void);
