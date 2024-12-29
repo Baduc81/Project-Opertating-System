@@ -79,6 +79,48 @@ sys_pgaccess(void)
 }
 #endif
 
+#ifdef LAB_PGTBL
+uint64
+sys_pgaccess(void)
+{
+  int num_pages;
+  uint64 start_va;
+  uint64 buffer_addr;
+
+  argaddr(0, &start_va);
+  argint(1, &num_pages);
+  argaddr(2, &buffer_addr);
+
+  // Validate the number of pages
+  if (num_pages <= 0 || num_pages > 32) {
+    return -1; // Limit to 32 pages (adjust as needed)
+  }
+
+  uint64 buf = 0; // Initialize buffer to 0
+  struct proc *p = myproc(); // Get current process
+
+  for (int i = 0; i < num_pages; i++) {
+    uint64 va = (uint64)(start_va + i * PGSIZE); // Cast to uint64
+    pte_t *pte = walk(p->pagetable, va, 0);
+
+    if (!pte || !(*pte & PTE_V)) {
+      continue; // Invalid page, skip
+    }
+
+    if (*pte & PTE_A) {
+        buf |= (1ULL << i); // Set the corresponding bit in the buffer if page is accessed
+        *pte &= ~PTE_A; // Clear the access bit
+    }
+  }
+
+  if (copyout(p->pagetable, buffer_addr, (char *)&buf, sizeof(buf)) < 0) { // Cast buffer_addr to uint64
+      return -1;
+  }
+
+  return 0;
+}
+#endif
+
 uint64
 sys_kill(void)
 {
