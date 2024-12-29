@@ -1,0 +1,49 @@
+diff --git a/kernel/proc.c b/kernel/proc.c
+index 130d9ce..96d9ad4 100644
+--- a/kernel/proc.c
++++ b/kernel/proc.c
+@@ -158,6 +158,11 @@ freeproc(struct proc *p)
+   if(p->trapframe)
+     kfree((void*)p->trapframe);
+   p->trapframe = 0;
++  // add start
++  if(p->usyscallpage)
++    kfree((void *)p->usyscallpage);
++  p->usyscallpage = 0;
++  // add end
+   if(p->pagetable)
+     proc_freepagetable(p->pagetable, p->sz);
+   p->pagetable = 0;
+@@ -202,6 +207,11 @@ proc_pagetable(struct proc *p)
+     return 0;
+   }
+ 
++  if (mappages(pagetable, USYSCALL, PGSIZE, (uint64)(p->usyscallpage), PTE_R | PTE_U) < 0) {
++    uvmfree(pagetable, 0);
++    return 0;
++  }
++
+   return pagetable;
+ }
+ 
+@@ -212,6 +222,7 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
+ {
+   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+   uvmunmap(pagetable, TRAPFRAME, 1, 0);
++  uvmunmap(pagetable, USYSCALL, 1, 0);
+   uvmfree(pagetable, sz);
+ }
+ 
+diff --git a/kernel/proc.h b/kernel/proc.h
+index d021857..134b115 100644
+--- a/kernel/proc.h
++++ b/kernel/proc.h
+@@ -95,6 +95,8 @@ struct proc {
+   // wait_lock must be held when using this:
+   struct proc *parent;         // Parent process
+ 
++  struct usyscall *usyscallpage;  // share page within kernel and user
++
+   // these are private to the process, so p->lock need not be held.
+   uint64 kstack;               // Virtual address of kernel stack
+   uint64 sz;                   // Size of process memory (bytes)
