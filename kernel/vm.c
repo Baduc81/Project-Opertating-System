@@ -451,9 +451,8 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 }
 
 #ifdef LAB_PGTBL
-uint64 deepv = 0; // Biến toàn cục để theo dõi độ sâu.
 void
-vmprint(pagetable_t pagetable) {
+vmprint(pagetable_t pagetable, uint64 deepv) {
   // your code here
   // In ra địa chỉ bảng trang ở cấp độ cao nhất.
   if (deepv == 0){
@@ -472,9 +471,7 @@ vmprint(pagetable_t pagetable) {
       if ((pte & PTE_V) && (pte & (PTE_R|PTE_W|PTE_X)) == 0){
         // Lấy địa chỉ bảng trang cấp thấp hơn.
         uint64 child = PTE2PA(pte);
-        deepv += 1;
-        vmprint((pagetable_t)child);
-        deepv -= 1;
+        vmprint((pagetable_t)child, deepv + 1);
       } 
     }
   }

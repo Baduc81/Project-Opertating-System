@@ -175,7 +175,7 @@ int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
 // #define LAB_PGTBL
 #if defined(LAB_PGTBL) || defined(SOL_MMAP)
-void            vmprint(pagetable_t);
+void            vmprint(pagetable_t, uint64);
 #endif
 
 // plic.c
